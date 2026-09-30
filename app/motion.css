@@ -1,0 +1,224 @@
+/* ============================================================
+   motion.css —— Mineradio 式交互动效
+   纯增量：只加动画/过渡，不改任何布局尺寸与配色。
+   html.motion-off 或 prefers-reduced-motion 时全部关掉。
+   ============================================================ */
+
+/* ---------- 背景呼吸光（Mineradio 那种缓慢漂移的柔光） ---------- */
+#motion-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+#motion-bg i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: .30;
+  will-change: transform;
+}
+#motion-bg i:nth-child(1) {
+  width: 52vw; height: 52vw; left: -14vw; top: -18vw;
+  background: radial-gradient(circle, color-mix(in srgb, var(--gold) 55%, transparent), transparent 68%);
+  animation: mDrift1 34s ease-in-out infinite alternate;
+}
+#motion-bg i:nth-child(2) {
+  width: 46vw; height: 46vw; right: -12vw; top: 22vh;
+  background: radial-gradient(circle, rgba(150,72,86,.50), transparent 68%);
+  animation: mDrift2 41s ease-in-out infinite alternate;
+}
+#motion-bg i:nth-child(3) {
+  width: 40vw; height: 40vw; left: 26vw; bottom: -18vw;
+  background: radial-gradient(circle, rgba(74,110,132,.42), transparent 68%);
+  animation: mDrift3 47s ease-in-out infinite alternate;
+}
+@keyframes mDrift1 { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(7vw,5vh,0) scale(1.16); } }
+@keyframes mDrift2 { from { transform: translate3d(0,0,0) scale(1.1); } to { transform: translate3d(-6vw,-6vh,0) scale(.92); } }
+@keyframes mDrift3 { from { transform: translate3d(0,0,0) scale(.95); } to { transform: translate3d(5vw,-5vh,0) scale(1.14); } }
+
+/* ---------- 粒子星场（Mineradio 式，canvas 2D 版） ----------
+   铺在壁纸(#wall, z:-3)之后、内容之前。 */
+#motion-particles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .92;
+}
+html.has-wall #motion-particles { opacity: .58; }
+
+/* ---------- 结算画面的粒子爆开（一次性，独立层） ----------
+   跟常驻星场分开：星场 z:-1，爆开 z:-1 之上但不挡内容。 */
+#motion-burst {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+html.motion-off #motion-burst { display: none; }
+
+/* 让内容浮在光斑之上（header/nav 大多已 fixed，这里补个 z-index） */
+body > header, body > nav, #nav, #view, #crumb, .topbar { position: relative; z-index: 1; }
+
+/* ---------- 视图切换：整体淡入 + 轻微上浮 ----------
+   render() 每次都新建 .page，所以每换一屏都会重放一次。 */
+#view .page > * {
+  animation: mEnter .46s cubic-bezier(.2, .72, .25, 1) both;
+  animation-delay: calc(var(--i, 0) * 42ms);
+}
+@keyframes mEnter {
+  from { opacity: 0; transform: translateY(15px) scale(.986); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- 卡片：悬浮抬起 + 边框打光 ---------- */
+.card {
+  transition:
+    transform .30s cubic-bezier(.2, .72, .25, 1),
+    box-shadow .30s cubic-bezier(.2, .72, .25, 1),
+    border-color .30s,
+    background-color .30s;
+  will-change: transform;
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .30), 0 0 0 1px color-mix(in srgb, var(--gold) 16%, transparent);
+}
+.card:active { transform: translateY(-1px) scale(.992); }
+
+/* ---------- 按钮：悬浮上抬 / 按下回弹 ---------- */
+.btn {
+  transition:
+    transform .18s cubic-bezier(.2, .72, .25, 1),
+    background-color .22s, color .22s, border-color .22s, box-shadow .22s, opacity .22s;
+  will-change: transform;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0, 0, 0, .26); }
+.btn:active { transform: translateY(0) scale(.962); box-shadow: none; }
+.btn[disabled] { opacity: .5; transform: none; box-shadow: none; cursor: default; }
+
+/* ---------- 导航项：滑入 + 选中呼吸 ---------- */
+.rn {
+  transition: transform .24s cubic-bezier(.2, .72, .25, 1), background-color .24s, color .24s, box-shadow .24s;
+}
+.rn:hover { transform: translateX(3px); background-color: color-mix(in srgb, var(--gold) 10%, transparent); }
+.rn.on {
+  background-color: color-mix(in srgb, var(--gold) 16%, transparent);
+  animation: mPulse 3.0s ease-in-out infinite;
+}
+@keyframes mPulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%      { box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 16%, transparent); }
+}
+
+/* ---------- 选项 / 列表行：快速反馈 ---------- */
+.opt, .qcard .opt {
+  transition: transform .18s cubic-bezier(.2, .72, .25, 1), background-color .22s, border-color .22s;
+}
+.opt:hover { transform: translateX(4px); }
+.opt:active { transform: translateX(2px) scale(.995); }
+
+/* ---------- 数字滚动 / 统计卡 ---------- */
+.stat .v, .mnum {
+  font-variant-numeric: tabular-nums;
+  transition: color .3s;
+}
+.stat:hover .v { color: var(--gold-2); }
+
+/* ---------- 进度环：从 0 转到目标角度 ---------- */
+@property --p { syntax: '<number>'; inherits: true; initial-value: 0; }
+.ring {
+  transition: --p .9s cubic-bezier(.2, .72, .25, 1);
+}
+
+/* ---------- 顶部标题栏：链接与搜索框 ---------- */
+a { transition: color .2s, opacity .2s; }
+a:hover { opacity: .82; }
+#q, .inp {
+  transition: border-color .22s, box-shadow .22s, background-color .22s;
+}
+#q:focus, .inp:focus {
+  border-color: color-mix(in srgb, var(--gold) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent);
+  outline: none;
+}
+
+/* ---------- 标签条（🌸粉笔 的板块切换）---------- */
+.tabsbar .btn { position: relative; overflow: hidden; }
+.tabsbar .btn.pri { animation: mTabIn .32s cubic-bezier(.2, .72, .25, 1) both; }
+@keyframes mTabIn { from { transform: translateY(3px); opacity: .55; } to { transform: none; opacity: 1; } }
+
+/* ---------- 彩蛋图标：极轻的呼吸 ---------- */
+#fb-egg { animation: mEgg 5.5s ease-in-out infinite; transition: transform .25s, opacity .25s; }
+#fb-egg:hover { transform: scale(1.35) rotate(8deg); opacity: .5; }
+@keyframes mEgg {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50%      { transform: scale(1.12) rotate(-5deg); }
+}
+
+/* ---------- 抽屉 / 弹层 ---------- */
+.modal, .sheet {
+  animation: mPop .30s cubic-bezier(.2, .8, .3, 1) both;
+}
+@keyframes mPop {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ★toast 绝不能跟 modal/sheet 共用 mPop 的 `both`（m07041）
+   症状：「我打字的时候就显示文案已清空，而且中下方的那个东西总是一直存在」
+   根因：animation-fill-mode:both 里的 forwards 会把结束帧 opacity:1 / transform:none
+        **永久**钉住，而 CSS 动画在层叠里的优先级高于普通声明 ——
+        所以 .toast 的 opacity:0 永远盖不过它：toast 一旦显示就再也不消失；
+        同时 transform:none 把 translate(-50%) 的水平居中也打掉了，跑到中下方偏右。
+        上一次 toast 的文案（这里是「文案已清空」）就一直挂在屏上，用户打字时看到的
+        就是它 —— 所以「打字的时候显示文案已清空」和「一直存在」是同一件事。
+   修法：toast 单独的帧，全程带着 translate(-50%)；不加 fill，收尾交给
+        .toast / .toast.on 的 opacity+transition（.22s/.24s）。 */
+@keyframes mToast {
+  from { opacity: 0; transform: translate(-50%, 14px) scale(.97); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+.toast.on { animation: mToast .30s cubic-bezier(.2, .8, .3, 1); }
+.toast { transition: opacity .35s, transform .35s; }
+
+/* ---------- 答题卡 / 徽标 ---------- */
+.badge {
+  transition: transform .22s cubic-bezier(.2, .72, .25, 1);
+}
+.rn:hover .badge { transform: scale(1.16); }
+
+/* ============================================================
+   关掉动效：用户在设置里关了，或者系统要求减少动态效果
+   ============================================================ */
+html.motion-off #motion-bg,
+html.motion-off #motion-particles { display: none; }
+html.motion-off #view .page > *,
+html.motion-off .rn.on,
+html.motion-off .tabsbar .btn.pri,
+html.motion-off #fb-egg,
+html.motion-off .modal, html.motion-off .sheet, html.motion-off .toast {
+  animation: none !important;
+}
+html.motion-off .card:hover,
+html.motion-off .btn:hover,
+html.motion-off .btn:active,
+html.motion-off .rn:hover,
+html.motion-off .opt:hover,
+html.motion-off .opt:active { transform: none; }
+html.motion-off .card,
+html.motion-off .btn,
+html.motion-off .rn,
+html.motion-off .opt { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  #motion-bg { display: none; }
+  #view .page > *, .rn.on, .tabsbar .btn.pri, #fb-egg,
+  .modal, .sheet, .toast { animation: none !important; }
+  .card:hover, .btn:hover, .btn:active, .rn:hover,
+  .opt:hover, .opt:active { transform: none; }
+}

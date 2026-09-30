@@ -1,0 +1,35 @@
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+out/
+*.log
+
+# 内容数据与素材（涉及第三方著作权，不公开分发）
+app/data/
+app/assets/
+
+# 第三方课程讲义
+app/deep/shenlun/
+
+# 第三方平台对接模块（不公开）
+fenbi-sync/
+fenbi-cookies.json
+netease.json
+.fenbi-login/
+cookies.json
+
+# OCR / 中间产物 / 备份
+ocr-scan-*.json
+ocr-list-*.txt
+_bak_*/
+_tmp_*
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 截图存档（仅保留 docs/screenshots 下的）
+截图存档/

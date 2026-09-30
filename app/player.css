@@ -1,0 +1,162 @@
+/* ============================================================
+   player.css —— 常驻底部播放条 + 音乐面板（1.9.0）
+   用户 m11719：「加上音乐播放功能…每次启动都会随机放里面的歌曲，支持多种切歌方式」
+   纯增量：不动 app.css / home.css / wall.css 的既有布局与配色。
+   ============================================================ */
+
+/* ── 底部播放条 ──
+   插在 #app 内 .stage 之后。app.css:23 的 #app 是 flex 列，
+   所以这一条自己占 60px，.stage 相应变矮，不会盖住内容。
+   z-index 950 > .wp-panel 的 900：歌单面板开着的时候播放条还露在外面，
+   边翻歌单边能暂停/切歌（面板底部也因此留了 110px 内边距）。 */
+.pb{
+  flex:0 0 auto;height:60px;position:relative;z-index:950;
+  display:flex;align-items:center;gap:14px;padding:0 18px;
+  background:var(--panel);border-top:1px solid var(--line);
+  transition:height .2s var(--t),padding .2s var(--t),gap .2s var(--t);
+}
+.pb[data-min="1"]{height:34px;gap:10px;padding:0 13px}
+.pb[data-min="1"] .pb-wide{display:none}
+.pb[data-min="1"] .pb-cover{flex-basis:26px;width:26px;height:26px;font-size:12px}
+.pb[data-min="1"] .pb-name{font-size:12px}
+.pb[data-min="1"] .pb-sub{display:none}
+.pb[data-min="1"] .pb-btn.pri{width:28px;height:28px;font-size:13px;box-shadow:none}
+
+/* 封面（转起来 = 正在放） */
+.pb-cover{
+  flex:0 0 42px;width:42px;height:42px;border-radius:50%;padding:0;border:0;overflow:hidden;
+  position:relative;display:grid;place-items:center;font-size:17px;color:#fff5f0;cursor:pointer;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  box-shadow:0 4px 14px rgba(0,0,0,.42);
+  transition:flex-basis .2s var(--t),width .2s var(--t),height .2s var(--t);
+}
+.pb-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.pb-cover:hover{filter:brightness(1.1)}
+.pb-cover.on{animation:pbSpin 6s linear infinite}
+@keyframes pbSpin{to{transform:rotate(360deg)}}
+
+/* 歌名 / 副行 */
+.pb-meta{min-width:0;flex:0 1 300px;cursor:pointer}
+.pb-name{font-size:13.5px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb-sub{font-size:11px;color:var(--txt-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.pb-sub b{color:var(--brand);font-weight:600}
+
+/* 按钮 */
+.pb-btn{
+  appearance:none;-webkit-appearance:none;border:1px solid transparent;background:transparent;color:var(--txt-2);
+  width:36px;height:36px;border-radius:50%;font-size:15px;line-height:1;cursor:pointer;
+  display:grid;place-items:center;flex:0 0 auto;
+  transition:background .16s var(--t),color .16s var(--t),transform .12s var(--t);
+}
+.pb-btn:hover{background:var(--brand-soft);color:var(--brand)}
+.pb-btn:active{transform:scale(.92)}
+.pb-btn[disabled]{opacity:.35;pointer-events:none}
+.pb-btn.pri{width:42px;height:42px;font-size:17px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff5f0;box-shadow:0 5px 16px rgba(0,0,0,.42)}
+.pb-btn.pri:hover{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff5f0;filter:brightness(1.1)}
+.pb-btn.on{color:var(--brand);background:var(--brand-soft)}
+.pb-btn.sm{width:30px;height:30px;font-size:12.5px;border-color:var(--line)}
+.pb-btn.sm:hover{border-color:var(--brand)}
+
+/* 进度 */
+.pb-prog{flex:1 1 auto;min-width:130px;display:flex;align-items:center;gap:9px}
+.pb-time{font-size:11px;color:var(--txt-3);font-variant-numeric:tabular-nums;min-width:33px;text-align:center;flex:0 0 auto}
+.pb-range{appearance:none;-webkit-appearance:none;background:transparent;cursor:pointer;flex:1;min-width:56px;height:16px;margin:0}
+.pb-range::-webkit-slider-runnable-track{height:4px;border-radius:99px;background:var(--line)}
+.pb-range::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;border:0;background:var(--brand-2);margin-top:-3.5px;box-shadow:0 1px 4px rgba(0,0,0,.55)}
+.pb-range:hover::-webkit-slider-thumb{background:var(--brand)}
+.pb-vol{flex:0 0 80px;min-width:52px;max-width:110px}
+
+/* 右组 */
+.pb-right{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+
+/* 不能播的那种曲目给个灰标 */
+.pb-bad{color:var(--bad);font-size:11px}
+
+/* ── 音乐面板（复用 wall.css 的 .wp-panel / .wp-grid / .wp-card） ── */
+.pm-panel{padding-bottom:118px}
+.pm-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:11px}
+.pm-tab{
+  padding:8px 16px;border-radius:10px;font-size:13px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:rgba(255,255,255,.72);
+  transition:background .18s,border-color .18s,color .18s;
+}
+.pm-tab:hover{background:rgba(255,255,255,.09);color:#fff}
+.pm-tab.on{background:rgba(120,210,190,.16);border-color:rgba(120,210,190,.5);color:#fff;font-weight:600}
+.pm-tab .n{opacity:.6;font-weight:400;margin-left:5px}
+.pm-body{margin-top:16px}
+.pm-sec{margin-top:22px}
+.pm-sec>h3{margin:0 0 9px;font-size:14px;font-weight:700;color:rgba(255,255,255,.86)}
+.pm-note{font-size:11.5px;color:rgba(255,255,255,.46);line-height:1.85}
+
+/* 扫码块 */
+.pm-qr{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;padding:20px;border-radius:18px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)}
+.pm-qrbox{width:214px;height:214px;flex:0 0 auto;border-radius:14px;background:#fff;padding:9px;display:grid;place-items:center}
+.pm-qrbox svg{width:100%;height:100%;display:block}
+.pm-qrbox .ph{font-size:12px;color:#333;text-align:center;line-height:1.7;padding:10px}
+.pm-qrside{min-width:240px;flex:1 1 280px}
+.pm-qrside .st{font-size:13.5px;font-weight:600;color:#fff;margin-bottom:6px}
+.pm-qrside .st.ok{color:#6fd3a8}
+.pm-qrside .st.bad{color:#e57373}
+.pm-qr-url{margin-top:10px;padding:7px 10px;border-radius:9px;background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.1);font-size:11px;line-height:1.5;color:rgba(255,255,255,.62);
+  word-break:break-all;cursor:copy;font-family:ui-monospace,Consolas,monospace}
+.pm-qr-url:hover{background:rgba(255,255,255,.09);color:#fff}
+.pm-qr-url[hidden]{display:none}
+
+/* ★1.9.9：扫码被风控之后的兜底入口（Cookie 登录 / 歌单链接） */
+.pm-ck{width:100%;margin-top:10px;padding:10px 12px;border-radius:11px;font-size:12.5px;line-height:1.6;
+  font-family:ui-monospace,Consolas,monospace;color:rgba(255,255,255,.9);
+  background:rgba(0,0,0,.26);border:1px solid rgba(255,255,255,.14);resize:vertical}
+.pm-ck:focus{outline:none;border-color:rgba(120,210,190,.55);background:rgba(0,0,0,.34)}
+.pm-ck::placeholder{color:rgba(255,255,255,.3)}
+input.pm-ck{height:36px;margin-top:0;resize:none}
+.pm-sec .st{font-size:12.5px;font-weight:600;margin-top:8px;color:rgba(255,255,255,.7)}
+.pm-sec .st.ok{color:#6fd3a8}
+.pm-sec .st.bad{color:#e57373}
+
+/* 曲目行 */
+.pm-tracks{margin-top:10px}
+.pm-track{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:11px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);font-size:13px;color:rgba(255,255,255,.85)}
+.pm-track+.pm-track{margin-top:5px}
+.pm-track.on{border-color:rgba(120,210,190,.6);background:rgba(120,210,190,.1)}
+/* ★1.9.2：曲目行现在真的能点（原来没绑事件，点了没反应 = 用户报的「扫了放不了」） */
+.pm-track{cursor:pointer;transition:background .14s ease,border-color .14s ease}
+.pm-track:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+.pm-track.cur{border-color:rgba(120,210,190,.7);background:rgba(120,210,190,.13)}
+.pm-track.cur .pm-idx{color:#7ad2be}
+.pm-track .pm-idx{flex:0 0 26px;text-align:right;color:rgba(255,255,255,.34);font-size:11px;font-variant-numeric:tabular-nums}
+.pm-track.cur .pm-idx{font-size:0}
+.pm-track.cur .pm-idx::after{content:'▶';font-size:11px;margin:0}
+.pm-track.dim{opacity:.42}
+.pm-track.ok{border-color:rgba(110,200,150,.32)}
+.pm-fee.ok{border-color:rgba(110,200,150,.5);color:#6fd3a8}
+.pm-track .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-track .ar{color:rgba(255,255,255,.5);font-size:11.5px;flex:0 0 auto;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-fee{font-size:10px;padding:1px 6px;border-radius:99px;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.55);flex:0 0 auto}
+.pm-fee.vip{border-color:rgba(230,180,80,.55);color:#e6b450}
+.pm-fee.free{border-color:rgba(110,200,150,.5);color:#6fd3a8}
+
+/* 歌单卡 */
+.pm-pls{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:12px;margin-top:10px}
+.pm-pl{display:flex;gap:11px;align-items:center;padding:11px;border-radius:14px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035)}
+.pm-pl.on{border-color:rgba(120,210,190,.55)}
+.pm-pl .cv{width:48px;height:48px;flex:0 0 auto;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.07);display:grid;place-items:center;font-size:19px}
+.pm-pl .cv img{width:100%;height:100%;object-fit:cover;display:block}
+.pm-pl .tx{min-width:0;flex:1}
+.pm-pl .t1{font-size:13px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-pl .t2{font-size:11px;color:rgba(255,255,255,.46);margin-top:2px}
+
+/* 分组线提示 */
+.pm-hint{margin-top:10px;padding:10px 13px;border-radius:11px;border:1px dashed rgba(255,255,255,.16);font-size:12px;color:rgba(255,255,255,.6);line-height:1.9}
+
+/* 设置行（开关 / 三态 / 滑杆） */
+.pm-set{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:rgba(255,255,255,.72);margin-top:10px}
+.pm-set .lb{min-width:70px;color:rgba(255,255,255,.5)}
+.pm-set input[type=range]{flex:1 1 140px;min-width:110px;accent-color:#78d2be;max-width:280px}
+.pm-chips{display:flex;gap:6px;flex-wrap:wrap}
+.pm-chip{padding:6px 12px;border-radius:9px;font-size:12px;cursor:pointer;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:rgba(255,255,255,.7)}
+.pm-chip.on{background:rgba(120,210,190,.18);border-color:rgba(120,210,190,.55);color:#fff;font-weight:600}
+
+/* 拖 .ncm 进来的落点 */
+.pm-drop{margin-top:12px;padding:18px;border-radius:14px;border:1.5px dashed rgba(255,255,255,.2);text-align:center;font-size:12.5px;color:rgba(255,255,255,.55);transition:border-color .18s,background .18s}
+.pm-drop.hot{border-color:rgba(120,210,190,.7);background:rgba(120,210,190,.09);color:#fff}

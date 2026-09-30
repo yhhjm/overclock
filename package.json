@@ -1,0 +1,59 @@
+{
+  "name": "overclock",
+  "productName": "超频",
+  "version": "1.9.30",
+  "description": "超频 OVERCLOCK —— 离线题库学习终端（原生 JS 单页应用 + Electron 桌面封装）",
+  "author": "Overclock",
+  "license": "MIT",
+  "private": true,
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node electron/make-icon.mjs",
+    "dist": "electron-builder --win",
+    "dist:dir": "electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.overclock.xingce",
+    "productName": "超频",
+    "copyright": "© 2026 Overclock",
+    "directories": {
+      "output": "dist",
+      "buildResources": "electron"
+    },
+    "files": [
+      "app/**/*",
+      "electron/**/*",
+      "package.json",
+      "!**/cookies.json",
+      "!**/out/**",
+      "!**/截图存档/**"
+    ],
+    "asar": false,
+    "win": {
+      "icon": "electron/icon.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "超频",
+      "artifactName": "超频-${version}-安装版.${ext}",
+      "uninstallDisplayName": "超频"
+    },
+    "portable": {
+      "artifactName": "超频-${version}-便携版.${ext}"
+    },
+    "electronLanguages": ["zh-CN", "en-US"]
+  }
+}

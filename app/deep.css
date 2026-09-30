@@ -1,0 +1,277 @@
+/* AI 讲师抽屉（超频 ⇄ DeepTutor）。
+   用我们自己的配色变量（--panel / --line / --brand…），明暗主题自动跟着走。 */
+
+.dp-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: none;
+  background: rgba(6, 8, 11, .48);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.dp-mask.on { display: block; animation: dpFade .16s ease both; }
+@keyframes dpFade { from { opacity: 0 } to { opacity: 1 } }
+
+.dp-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(600px, 94vw);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel-read, var(--panel, #372628));
+  border-left: 1px solid var(--line);
+  box-shadow: -18px 0 46px rgba(0, 0, 0, .44);
+  animation: dpIn .2s cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes dpIn { from { transform: translateX(26px); opacity: .4 } to { transform: none; opacity: 1 } }
+
+.dp-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.dp-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.dp-logo {
+  flex: 0 0 auto;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  background: var(--brand-soft, rgba(201, 162, 75, .12));
+  border: 1px solid var(--line);
+  font-size: 17px;
+}
+.dp-h1 { font-size: 14.5px; font-weight: 700; letter-spacing: .3px; }
+.dp-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--txt-3);
+  max-width: 330px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dp-sub.ok { color: var(--ok); }
+.dp-sub.bad { color: var(--bad); }
+
+.dp-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.dp-msg {
+  max-width: 100%;
+  padding: 10px 12px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  line-height: 1.82;
+  word-break: break-word;
+}
+.dp-msg p { margin: 0 0 8px; }
+.dp-msg p:last-child { margin-bottom: 0; }
+.dp-msg.user {
+  align-self: flex-end;
+  max-width: 86%;
+  background: var(--brand-soft, rgba(201, 162, 75, .12));
+  border: 1px solid var(--line);
+  white-space: pre-wrap;
+  font-size: 12.5px;
+  color: var(--txt-2);
+}
+.dp-msg.ai {
+  align-self: stretch;
+  background: var(--panel-2, #443033);
+  border: 1px solid var(--line-2, rgba(201, 162, 75, .12));
+}
+.dp-msg.err { border-color: rgba(217, 82, 90, .5); color: var(--bad); }
+.dp-msg b { color: var(--brand-2, var(--brand)); }
+.dp-msg code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, .26);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12.5px;
+}
+.dp-tex {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .26);
+  border: 1px solid var(--line-2, rgba(201, 162, 75, .12));
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12.5px;
+  overflow-x: auto;
+  white-space: pre;
+}
+.dp-dots::after {
+  content: '▌';
+  animation: dpBlink 1s steps(2) infinite;
+  color: var(--brand);
+}
+@keyframes dpBlink { 50% { opacity: 0 } }
+.dp-note {
+  align-self: flex-start;
+  font-size: 11px;
+  color: var(--txt-3);
+  padding-left: 3px;
+}
+.dp-usage {
+  align-self: flex-start;
+  font-size: 10.5px;
+  color: var(--txt-3);
+  opacity: .8;
+  padding-left: 3px;
+}
+.dp-hello { font-size: 13px; line-height: 1.9; color: var(--txt-2); }
+.dp-hello .big { display: block; font-size: 26px; margin-bottom: 8px; }
+
+.dp-chips {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 14px 10px;
+}
+.dp-chips:empty { display: none; }
+
+.dp-foot {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 10px 14px 13px;
+  border-top: 1px solid var(--line);
+}
+.dp-foot textarea {
+  flex: 1 1 auto;
+  min-height: 40px;
+  max-height: 150px;
+  resize: vertical;
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--line, #5a4636);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.dp-foot textarea:focus { outline: none; border-color: var(--brand); }
+.dp-foot .btn { flex: 0 0 auto; }
+.dp-msg b.dp-set {
+  display: block;
+  margin: 10px 0 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--line-2, rgba(201, 162, 75, .12));
+  font-size: 12.5px;
+  letter-spacing: .4px;
+}
+
+/* ---------- 设置页那一组（第 1 期 ③） ---------- */
+.dp-inp {
+  min-width: 300px;
+  flex: 1 1 300px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--line, #5a4636);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+.dp-inp.sm { min-width: 160px; flex: 0 1 180px; }
+.dp-inp:focus { outline: none; border-color: var(--brand); }
+.dp-cmd {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--line, #5a4636);
+  background: rgba(0, 0, 0, .16);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.9;
+  word-break: break-all;
+  user-select: text;
+}
+.dp-warn { color: #e2685f; }
+
+/* ======================================================================
+   🤖 AI 讲师 · 整页（VIEWS.ai / app/deep-web.js）
+   把 DeepTutor 自己的网页版嵌成一屏：上面我们自己一条状态栏 + 按钮，
+   下面是 iframe。跨源 iframe 摸不到里面，所以状态只能靠 /deep/status 猜。
+   ★窗口太窄（手机/竖屏）时不做花活 —— 直接把工具栏换行，iframe 还是占满。
+   ====================================================================== */
+body.ai-full .view { padding: 0; overflow: hidden; }
+body.ai-full .page { max-width: none; margin: 0; height: 100%; }
+.dpw { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.dpw-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.dpw-state {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--txt-2);
+  line-height: 1.6;
+}
+.dpw-acts { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.dpw-tip {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--txt-2);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+.dpw-tip:empty { display: none; }
+.dpw-stage { position: relative; flex: 1 1 auto; min-height: 0; }
+.dpw-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;          /* 它的主题是纯白（snow），别让加载中闪深色 */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease;
+}
+.dpw-frame.on { opacity: 1; pointer-events: auto; }
+.dpw-empty {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 9px;
+  padding: 30px;
+}
+.dpw-empty.on { display: flex; }
+.dpw-e-ico { font-size: 46px; line-height: 1; }
+.dpw-empty h2 { margin: 0; font-size: 20px; }
+.dpw-empty p { margin: 0; max-width: 640px; font-size: 13px; line-height: 1.8; }
+.dpw-e-acts { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+@media (max-width: 860px) {
+  .dpw-bar { flex-wrap: wrap; }
+  .dpw-state { flex: 1 1 100%; }
+}

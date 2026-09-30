@@ -1,0 +1,64 @@
+/* ================= 草稿纸（scratch.js 配套样式） ================= */
+:root{--sc-ink:#f2ead8;--sc-ink2:#ff6f61}
+html[data-theme=dark]{--sc-ink:#fff5f0;--sc-ink2:#ff8a7a}
+
+/* ---- 题面批注层：直接画在题目卡片上（随卡片滚动/换题走） ---- */
+.sc-markcv{position:absolute;left:0;top:0;display:block;pointer-events:none;z-index:6;border-radius:12px;touch-action:none}
+.sc-markcv.arm{pointer-events:auto;cursor:crosshair;box-shadow:0 0 0 2px var(--brand) inset}
+.qcard.sc-armed,.mmnode.sc-armed{box-shadow:0 0 0 2px var(--brand) inset}
+.qcard.sc-has,.mmnode.sc-has{border-color:var(--brand)}
+
+/* ---- 题目卡片右上角的按钮组（跟着题目走，不再飘在屏幕右下角） ---- */
+.sc-rail{position:absolute;right:14px;top:14px;z-index:9;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  justify-content:flex-end;max-width:calc(100% - 28px)}
+.sc-rb{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--txt-2);font-size:12.5px;cursor:pointer;white-space:nowrap;font-family:inherit;
+  box-shadow:0 4px 12px rgba(0,0,0,0.32);transition:all .16s var(--t)}
+.sc-rb:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
+.sc-rb.on{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff5f0;border-color:transparent}
+
+/* ---- 笔刷工具条：就近展开在按钮组里 ---- */
+.sc-tools{display:none;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;
+  padding:4px 6px;border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  box-shadow:0 10px 24px rgba(0,0,0,0.42)}
+.sc-tools.on{display:flex}
+.sc-tools .sc-sep{width:1px;height:20px;background:var(--line);margin:0 2px}
+.sc-swatch{padding:0 8px}
+.sc-dot.ink2{background:linear-gradient(135deg,var(--gold-2),var(--gold-deep))}
+.sc-hint{position:static;align-self:flex-end;flex:0 0 auto;margin-top:2px;display:none;z-index:72;padding:5px 12px;border-radius:10px;
+  text-align:right;font-size:12px;color:#fff5f0;background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  box-shadow:0 8px 20px rgba(0,0,0,0.55);white-space:nowrap;max-width:100%;box-sizing:border-box}
+.sc-hint.on{display:block}
+.sc-hint b{font-weight:700}
+
+.sc-panel{position:fixed;right:18px;bottom:78px;width:430px;height:340px;min-width:250px;min-height:190px;
+  resize:both;overflow:hidden;display:none;flex-direction:column;z-index:70;
+  border:1px solid var(--line);border-radius:15px;box-shadow:0 20px 50px rgba(0,0,0,0.55);
+  background:color-mix(in srgb,var(--panel) calc(var(--sc-bg-a,.96) * 100%),transparent);backdrop-filter:blur(3px);
+  --sc-ink:#f2ead8;--sc-ink2:#ff6f61}
+html[data-theme=dark] .sc-panel{background:color-mix(in srgb,var(--panel) calc(var(--sc-bg-a,.96) * 100%),transparent);--sc-ink:#fff5f0;--sc-ink2:#ff8a7a}
+.sc-panel.on{display:flex}
+.sc-panel.moving{box-shadow:0 26px 60px rgba(0,0,0,0.55)}
+
+.sc-bar{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:7px 9px;border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.55);cursor:move;user-select:none;flex-wrap:nowrap;overflow:hidden}
+html[data-theme=dark] .sc-bar{background:rgba(255,255,255,.04)}
+.sc-bar b{font-size:12.5px;color:var(--txt-2);font-weight:700;margin-right:2px;white-space:nowrap}
+.sc-bar .grow,.sc-foot .grow{flex:1}
+.sc-b{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 9px;border-radius:9px;border:1px solid var(--line);
+  background:var(--panel);color:var(--txt-2);font-size:12.5px;cursor:pointer;white-space:nowrap;font-family:inherit}
+.sc-b:hover{border-color:var(--brand);color:var(--brand)}
+.sc-b.on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand);font-weight:600}
+.sc-dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--sc-ink)}
+.sc-dot.ink1{background:var(--sc-ink2)}
+
+.sc-wrap{flex:1;position:relative;min-height:0;cursor:crosshair;touch-action:none;
+  background-image:linear-gradient(rgba(0,0,0,0.32) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.32) 1px,transparent 1px);
+  background-size:24px 24px}
+html[data-theme=dark] .sc-wrap{background-image:linear-gradient(rgba(0,0,0,0.32) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.32) 1px,transparent 1px)}
+#sc-canvas{position:absolute;inset:0;display:block;touch-action:none}
+
+.sc-foot{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:5px 10px;border-top:1px solid var(--line);font-size:11.5px;color:var(--txt-3)}
+.sc-lbl{display:inline-flex;align-items:center;gap:6px;color:var(--txt-3);font-size:11.5px;white-space:nowrap}
+.sc-lbl input[type=range]{width:78px;accent-color:var(--brand)}
+.sc-tip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

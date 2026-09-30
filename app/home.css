@@ -1,0 +1,1023 @@
+/* home.css —— 🌸粉笔 首页的 Mineradio 式设计语言
+ *
+ * 照 D:\Mineradio\resources\app\public\index.html:168-275 的三层结构：
+ *   home-hero（左栏：日期 / 大号时间 / 引号文案 / 动作）
+ *   home-quick-grid（四张快捷卡：CONTINUE / LIBRARY / DAILY MIX / RECENT）
+ *   home-insight-dock（洞察条：今日练习 / 接下来 / 为你挑选 / 学情分析 / 平台推荐）
+ *
+ * 反复出现的设计套路就一条：
+ *   英文大写小标(拉开字距) + 中文标题 + 一句话副文 + 大圆角玻璃卡 + › 箭头 + 封面图位
+ * 全是增量样式，不动 app.css 的布局与配色。
+ */
+
+/* ---------- 顶层栅格：左 hero + 右内容 ---------- */
+.mi-wrap {
+  display: grid;
+  /* Mineradio 的 #empty-home .empty-home-shell 是 `.82fr : 1.78fr`（≈.315 : .685），gap 14px。
+   * 我们原来是 minmax(280px,30%) : 1fr、gap 18 —— 实测 1680 下 hero 461 / 右栏 1059，
+   * 原版是 511 / 1110，左栏窄了 50px、缝宽了 4px。改成同比例。 */
+  grid-template-columns: minmax(280px, .94fr) minmax(0, 2.06fr);
+  gap: 14px;
+  /* Mineradio 的 .home-hero 是 grid-row: 1 / span 2，撑满右栏整高（内容贴底排）。
+   * 之前写 align-items:start 让 hero 只有自己 min-height 那么高，看着矮一截。 */
+  align-items: stretch;
+  /* ★竖着铺满（用户 m09959：「全屏之后快捷卡太小了要能够自动调整大小」）。
+   * 原来整块仪表盘的高度完全由内容决定、跟窗口高矮无关：3840×2160 下底部空 693px
+   * （占视口 40%），而 hero 被 vw 字号一路撑到 1296px、卡还是 264px —— 字巨大卡很扁。
+   * Mineradio 的做法是 shell 吃 height:100%（#empty-home 用 top/bottom 定位卡死），
+   * 我们这边 .page 在滚动容器里，等效用 min-height。100vh 减去 topbar 58 + navbar 58
+   * + .view 的上下内边距 22/48 = 186，再多留 4px 免得亚像素凑出一个滚动条。
+   * 上限 1400：4K 全屏（2160 高）再往上堆只是往卡里灌空白（见下面那条媒体查询）。
+   * ★1.9.25 从 980 抬到 1400 —— 980 是「快捷卡 + 洞察条」时代定的，加了 542px 的
+   * 今日任务面板之后 980 根本装不下（详见下面 .mi-wrap > div:last-child 的注释）。 */
+  min-height: min(calc(100vh - 190px), 1400px);
+}
+
+@media (max-width: 1080px) {
+  .mi-wrap { grid-template-columns: 1fr; }
+}
+
+/* ★首页在大屏上放开 .page 的 1560 上限（用户 m09959：「全屏之后快捷卡太小了」）。
+ * 1560 是照 Mineradio 的 1480 定的，但他们的窗口最多就一千多宽；用户在 2277×1236
+ * 全屏下整块只占 68% 宽，两侧空一大片。1680（probe-style 的基准视口）算出来还是 1560，
+ * 一点都没动；1920 给 1720，2040 往上封顶 1840。 */
+.page-wide { max-width: min(1840px, max(1560px, calc(100vw - 200px))); }
+
+/* ★全屏时把多出来的高度喂给快捷卡。
+ * 之前试过给右栏套 `grid-template-rows: auto minmax(auto,.8fr) minmax(auto,1.2fr)` ——
+ * fr 轨道在「高度不定的 grid 容器」里会先按 max-content 定基准再分配，实测把整块
+ * 撑到 998px（1440×900 的窗口直接溢出到 110.9%），所以改成给右栏一个**确定高度**，
+ * 轨道就完全可预测了（这也正是 Mineradio 的做法：他们的 shell 是 height:100%）。
+ *
+ * ★1.9.25 重排（用户截图：「全屏的时候界面出现了重叠」）。
+ * 这条是 1.9.22 加「今日任务面板」之前定的：当时右栏只有 3 个孩子（标题行 /
+ * 快捷卡 / 洞察条），预算 = 72(标题) + 538(洞察条)，富余全给卡。加了 542px 的
+ * 任务面板之后右栏变成 **4 个孩子**，行模板还写 3 条、`height` 还是 980 封顶 ——
+ * `.mi-grid` 那条 `minmax(0,1fr)` 轨道被挤到 146px，而卡片自己有
+ * `min-height: clamp(...)` = 211–264px，于是**卡片撑破轨道往下压在任务面板上**。
+ * 用 _layout26.mjs 量出来的实况（修前）：
+ *   3440×1440 → 轨道 236 / 卡 264 → 溢出 28px，盖住面板 5992 px²
+ *   2140×1080 → 轨道 146 / 卡 244 → 溢出 98px，盖住面板 36120 px²
+ *   1920×1080 → 轨道 146 / 卡 211 → 溢出 65px，盖住面板 20502 px²
+ *   （2140×908 / 1680×931 / 1280×800 不中招 —— 闸门要 min-height:1080px）
+ * 三条一起改：
+ *   ① 行模板补成 4 条（标题 auto / 快捷卡 1fr / 任务面板 auto / 洞察条 auto）；
+ *   ② `minmax(0,1fr)` → `minmax(auto,1fr)`：轨道的最小值 = 内容（卡片的
+ *      min-height），**永远压不到 0**，卡片也就永远撑不破轨道；
+ *   ③ `height` → `min-height`：内容真装不下时整块自己长高，绝不互相压。
+ *   ④ 封顶 980 → 1400：980 是「只有快捷卡 + 洞察条」时算的（980−610=370 给卡），
+ *      现在多了 542 的面板，980 根本装不下；1400 是按 72+264+542+538+余量 重算的。
+ * 行分配：标题行 auto、快捷卡 1fr、任务面板 auto、洞察条 auto。
+ * 洞察条的自然高是 ~538px（130+283+99+2×13），它是硬底 —— 不能压，压了 .mi-item 的
+ * 78px 会溢出；所以富余高度全部给卡。卡高 = 可用高 − 72(标题) − 542(任务面板) − 538(洞察条)：
+ *   1920×1080 → 890 − 1152 < 0（装不下，整块长高，卡保持自己的 min-height 211）；
+ *   3440×1440 → 1250 − 1152 = 98 给卡（卡高 = max(264, 98) = 264）。
+ * 闸门卡在 (min-width:1321px) and (min-height:1080px)：1321 以下 .mi-grid 会折成
+ * 两列、自然高本来就溢，1080 以下右栏的自然高已经吃满可用高，都没得喂。
+ * 右栏给的是 min-height 而不是让整块变高，这样用户写一篇很长的励志文案时
+ * hero 仍然能按内容长高、不会被 overflow:hidden 裁掉。 */
+@media (min-width: 1321px) and (min-height: 1080px) {
+  .mi-wrap > div:last-child {
+    display: grid;
+    grid-template-rows: auto minmax(auto, 1fr) auto auto;
+    min-height: min(calc(100vh - 190px), 1400px);
+  }
+
+  /* ★卡一变高，图位就不再跟文字抢横向空间了。
+   * `.mi-title/.mi-sub` 的 `max-width: calc(100% - var(--art) - 8px)` 是照 Mineradio
+   * 借的：他们卡只有 148–176 高，标题在上、图位贴右下 18px，两者纵向会撞，只能横向让位。
+   * 我们全屏时卡高 280–350，文字块（小标+标题+两行副文 ≈ 110px）整个缩在上半截，
+   * 跟贴底的图位根本不相交 —— 再让位就是白让：2277 下窄卡只有 255 宽，图位 138 + 内边距 34
+   * 就吃掉 172，标题只剩 49px，「快速练习」被拆成竖排四行（这就是用户截图里那排竖字）。
+   * 主角卡不放开：probe-style 的「放大后标题仍不压图位」是拿 .mi-card.featured 量的，
+   * 而它的标题框是块级满宽（不是 shrink-to-fit），max-width 一松 right 就压过图位 left。
+   * 主角卡宽 446、标题只有四个字，本来就不缺地方。 */
+  .mi-card:not(.featured) .mi-title,
+  .mi-card:not(.featured) .mi-sub {
+    max-width: calc(100% - 8px);
+  }
+}
+
+/* ---------- 左栏 hero ----------
+ * 数值照抄 Mineradio public/css/index.css 的 .home-hero：28px 圆角 / blur(30px) saturate(1.16) /
+ * 145deg 三层玻璃渐变 / 双层 inset 高光 + 7% accent 描边 / 28px 90px 的大扩散投影。 */
+.mi-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  /* Mineradio 的 #empty-home .daily-review-card 是 clamp(24px, 3vw, 40px)；
+   * 1680 下量到 40px，我们原来是固定 28px —— 文字离卡片边缘近了 12px。 */
+  padding: clamp(24px, 3vw, 40px);
+  min-height: 438px;
+  display: flex;
+  flex-direction: column;
+  /* Mineradio 的 .daily-review-card 是「内容贴底排」：顶部留大片给壁纸/视频，
+   * 日期→时间→文案→按钮自上而下堆在卡片下半部。间距走子元素的 margin-top，不用 gap。 */
+  justify-content: flex-end;
+  gap: 0;
+  /* Mineradio 的 hero 是两层玻璃：外层 .home-hero（玻璃基底）套内层 .daily-review-card
+   * （径向光 + 暗渐变）。两层背景叠在一张卡上 —— 内层在上，外层垫底。 */
+  background:
+    radial-gradient(520px 420px at 20% 12%, rgba(var(--fc-accent-rgb, 255, 255, 255), .18), transparent 64%),
+    radial-gradient(360px 320px at 96% 4%, rgba(76, 100, 255, .17), transparent 66%),
+    linear-gradient(160deg, rgba(26, 31, 41, .38), rgba(4, 6, 10, .88)),
+    linear-gradient(145deg, rgba(33, 29, 34, .64), rgba(9, 10, 14, .76) 48%, rgba(17, 20, 25, .70));
+  border: 1px solid rgba(255, 255, 255, .085);
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, .34),
+    0 0 0 1px rgba(95, 224, 192, .07),
+    inset 0 1px 0 rgba(255, 255, 255, .065);
+  backdrop-filter: blur(30px) saturate(1.16);
+  -webkit-backdrop-filter: blur(30px) saturate(1.16);
+  contain: layout paint style;
+  isolation: isolate;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transition: filter .28s ease;
+}
+/* .daily-review-card:hover —— 鼠标移上去整块微微提亮 */
+.mi-hero:hover { filter: brightness(1.055) saturate(1.06); }
+
+/* 两层 ::before 合成一层：内层 .daily-review-card::before（自下而上压暗 + 42px 竖纹）在上，
+ * 外层 .home-hero::before（斜色洗 + 48px 竖纹 + 44px 横纹，Mineradio 的隐约栅格感）垫底。
+ * 注意 background 的层序是「第一个画在最上面」。 */
+.mi-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: .88;
+  background:
+    linear-gradient(180deg, rgba(4, 7, 12, .02), rgba(3, 5, 9, .88) 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .024) 0 1px, transparent 1px 42px),
+    linear-gradient(118deg, rgba(255, 255, 255, .060), transparent 24%, rgba(255, 83, 103, .070) 54%, rgba(122, 215, 194, .055) 82%, transparent 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, .032) 0 1px, transparent 1px 48px),
+    linear-gradient(0deg, rgba(255, 255, 255, .024) 0 1px, transparent 1px 44px);
+  pointer-events: none;
+}
+
+/* 贴底的一道渐隐亮线 —— Mineradio hero 下沿那条 */
+.mi-hero::after {
+  content: '';
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 22px;
+  height: 1px;
+  opacity: .82;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(95, 224, 192, .52),
+    rgba(36, 66, 255, .24),
+    rgba(248, 244, 238, .18),
+    transparent);
+  pointer-events: none;
+}
+
+.mi-hero > * { position: relative; z-index: 2; }
+
+/* 以下排版逐条照抄 Mineradio 的 .daily-review-* */
+.mi-date {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .62);
+}
+
+/* 大号时间 —— Mineradio hero 的视觉重心
+ * 上限跟着视口长（用户：全屏后东西太小）：1680 及以下仍是 Mineradio 原值 68px，
+ * 2277 的全屏下长到 ~98px。用 max() 兜住下限，窄屏的 5vw 行为一点都不变。
+ * ★2026-09-29（用户 m09959）：原来这个 max() 没有上界，3440 宽时一路涨到 156px，
+ * 把 hero 顶到 1080px 高、仪表盘整体头重脚轻。Mineradio 是锁宽 1480 的，
+ * 所以这里也封在 2277 处的值（98px），再宽的屏不再变大。 */
+.mi-clock {
+  margin-top: 7px;
+  font-size: clamp(42px, 5vw, max(68px, min(98px, calc(68px + (100vw - 1680px) * .05))));
+  font-weight: 760;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 12px 38px rgba(0, 0, 0, .54);
+}
+
+/* ★「上面空了好大一段」（用户 m07675 第 1 条）
+ * hero 是整栏高（比右栏还高），内容原先全部 flex-end 靠底排，于是卡片上半部是一大片死黑。
+ * 改法：给文案和按钮各挂一个 auto 外边距 —— 两段 auto 把富余高度均分，
+ * 内容自然摊成三段：日期+时间贴顶、文案落在竖直中点、按钮压底。
+ * padding-top 保证挤紧（窄屏/内容高）时也至少留 24px，不会贴到一起。 */
+.mi-quote {
+  margin-top: auto;
+  padding-top: 24px;
+  font-size: clamp(21px, 2.2vw, max(34px, min(56px, calc(34px + (100vw - 1680px) * .028))));
+  font-weight: 760;
+  line-height: 1.36;
+  letter-spacing: .01em;
+  color: #fff;
+  text-shadow: 0 8px 34px rgba(0, 0, 0, .68);
+  max-width: 92%;
+  white-space: pre-wrap;
+}
+
+/* 空态：用和真文案一样的字号排成「幽灵文案」，保住 hero 的视觉重心，
+ * 而不是塌成一个小虚线框（那是上一版看起来「没做完」的主因）。 */
+.mi-quote.empty {
+  font-size: clamp(21px, 2.2vw, max(34px, min(56px, calc(34px + (100vw - 1680px) * .028))));
+  font-weight: 760;
+  line-height: 1.36;
+  letter-spacing: .01em;
+  text-shadow: none;
+  color: rgba(255, 255, 255, .22);
+  border: 0;
+  border-radius: 0;
+  /* padding-top 跟 .mi-quote 的 24px 对齐（这条规则 specificity 更高，会把简写覆盖掉） */
+  padding: 24px 0 0;
+  cursor: text;
+  max-width: 92%;
+}
+.mi-quote.empty::after {
+  content: '';
+  display: block;
+  width: 46px;
+  height: 2px;
+  margin-top: 14px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .30), transparent);
+}
+
+.mi-quote-src {
+  margin-top: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, .58);
+}
+
+.mi-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+/* 只认 hero 的直接子元素那一条按钮排 —— 编辑面板里的「保存/取消」那排不动它 */
+.mi-hero > .mi-hero-actions {
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.mi-hero-actions button {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .26);
+  color: rgba(255, 255, 255, .78);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background .18s, transform .18s, color .18s;
+}
+.mi-hero-actions button:hover {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  transform: translateY(-2px);
+}
+.mi-hero-actions button:active { transform: translateY(0) scale(.96); }
+
+/* 自定义文案编辑面板 */
+.mi-quote-edit {
+  display: none;
+  gap: 8px;
+  flex-direction: column;
+  margin-top: 10px;
+}
+.mi-quote-edit.on { display: flex; }
+.mi-quote-edit textarea {
+  width: 100%;
+  min-height: 92px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, .15);
+  background: rgba(255, 255, 255, .06);
+  color: #fff;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.mi-quote-edit .hint { font-size: 11px; color: rgba(255, 255, 255, .45); }
+
+/* ---------- 右栏：四张快捷卡 ----------
+ * 数值照抄 Mineradio 的 .home-card：min-height 152 / radius 22 / padding 17 /
+ * linear-gradient(142deg, rgba(18,21,26,.66), rgba(8,9,13,.76)) /
+ * blur(24px) saturate(1.12) / transition .22s cubic-bezier(.16,1,.3,1) */
+.mi-grid {
+  display: grid;
+  /* Mineradio 的 .home-quick-grid：CONTINUE 是主角，比其余三张宽 1.75 倍 */
+  grid-template-columns: minmax(320px, 1.75fr) repeat(3, minmax(145px, 1fr));
+  gap: clamp(13px, calc(-5.29px + 1.089vw), 19.5px);
+}
+
+@media (max-width: 1320px) { .mi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .mi-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ★快捷卡随视口自适应（用户：「全屏之后快捷卡 太小了要能够自动调整大小」）。
+ * 规则统一写成 clamp(Mineradio 原值, calc(a + b·vw), 原值×1.5)，
+ * a/b 由「1680px 处 = Mineradio 原值、2277px（用户全屏 2277×1236）处 = 原值×1.5」反解
+ * （b = 原值×0.083752、a = 原值×−0.407036）。
+ * 所以 1680 及以下算出来的数值跟 Mineradio 一模一样（probe-style 的风格断言就是在 1680 量的），
+ * 越往全屏越大：70px 的图位在 2277 会变成 105px，卡高 158→237。
+ *
+ * ★取值口径（2026-09 修订）：Mineradio 有两套数值 —— 通用的 .home-card（152 高 / 17 内边距 /
+ * 图位 108）和 `#empty-home .home-grid.home-quick-grid` 的覆盖（158 / 20 / 主角卡 176）。
+ * 首页真正渲染出来的是**覆盖那套**（拿 CDP 在 1680×931 量原版确认：卡内边距 20、主角卡
+ * min-height 176、标题 24px、主角卡图位 126×126 r26、窄卡图位 70×70 r18）。
+ * 我们此前照的是通用那套，所以「窄卡图位偏大、主角卡图位偏小、字号一律 19」都不对。 */
+.mi-card {
+  --tone-a: #00f5d4;
+  --tone-b: #2442ff;
+  --tone-c: #f8f4ee;
+  --art: clamp(70px, calc(-28.49px + 5.863vw), 105px);
+  --art-r: clamp(18px, calc(-7.33px + 1.508vw), 27px);
+  --art-fs: clamp(22px, calc(-10.24px + 1.843vw), 33px);
+  --mi-pad: clamp(20px, calc(-8.14px + 1.675vw), 30px);
+  position: relative;
+  overflow: hidden;
+  /* ★用 column flex 明确「文字贴顶、封面贴右下」，不用 <button> 的匿名匿名框。
+   * button 默认会把内容**垂直居中**（Chrome 给 button 生成一个匿名 flex 容器），
+   * display:block 也改不掉它。卡只有 152 高时居中和贴顶看不出区别（文字块本身就有 110），
+   * 但全屏时卡长到 280–350，居中的文字块就会被推到下半截、正好撞上右下角的封面，
+   * 用户截图里「305 个考点…」压着色块就是这个原因。 */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  width: 100%;
+  text-align: left;
+  border-radius: clamp(22px, calc(-8.95px + 1.842vw), 33px);
+  padding: var(--mi-pad);
+  min-height: clamp(158px, calc(-64.31px + 13.233vw), 237px);
+  cursor: pointer;
+  color: #fff;
+  /* ★透明度（用户 m06726：「透明度也要可以自己调整」）—— alpha 乘 --mi-bg-m，由外观面板的滑杆给；
+     滑到 100% 时 alpha 接近 1（卡片变实、字最清楚），往下滑就是往设计值以下更透。 */
+  background: linear-gradient(142deg, rgba(18, 21, 26, calc(.66 * var(--mi-bg-m, 1))), rgba(8, 9, 13, calc(.76 * var(--mi-bg-m, 1))));
+  border: 1px solid rgba(255, 255, 255, .085);
+  box-shadow: 0 20px 64px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .060);
+  backdrop-filter: blur(24px) saturate(1.12);
+  -webkit-backdrop-filter: blur(24px) saturate(1.12);
+  transition: transform .22s cubic-bezier(.16, 1, .3, 1), border-color .22s, background .22s, box-shadow .22s;
+}
+
+/* 色洗 + 细竖纹（Mineradio .home-card::before） */
+.mi-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: .86;
+  background:
+    linear-gradient(118deg, color-mix(in srgb, var(--tone-a) 22%, transparent), transparent 38%, color-mix(in srgb, var(--tone-b) 16%, transparent) 74%, transparent),
+    linear-gradient(90deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 38px);
+  pointer-events: none;
+}
+
+/* 右下那撮斜条纹装饰（Mineradio .home-card::after） */
+.mi-card::after {
+  content: '';
+  position: absolute;
+  right: calc(var(--art) + 22px);
+  bottom: 18px;
+  width: 38px;
+  height: 70px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(0deg, color-mix(in srgb, var(--tone-c) 64%, rgba(255, 255, 255, .26)) 0 4px, transparent 4px 10px);
+  opacity: .20;
+  transform: skewX(-10deg);
+  pointer-events: none;
+}
+
+.mi-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--tone-a) 42%, rgba(255, 255, 255, .18));
+  background: linear-gradient(142deg, rgba(36, 33, 39, calc(.72 * var(--mi-bg-m, 1))), rgba(10, 10, 14, calc(.84 * var(--mi-bg-m, 1))));
+  box-shadow:
+    0 28px 84px rgba(0, 0, 0, .36),
+    0 0 34px color-mix(in srgb, var(--tone-a) 16%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, .085);
+}
+
+/* CONTINUE 是主角卡（Mineradio 的 .home-card-featured）：它宽（1.75fr），
+ * 图位用原版首页的 126 / r26，min-height 176；其余三张窄卡是 70 / r18、min-height 158。
+ * 两套 `--art` 都会随视口长大，见上面 .mi-card 头上的注释。 */
+.mi-card.featured {
+  --tone-a: #9db8cf;
+  --tone-b: #00f5d4;
+  --tone-c: #2442ff;
+  --art: clamp(126px, calc(-51.28px + 10.553vw), 189px);
+  --art-r: clamp(26px, calc(-10.58px + 2.178vw), 39px);
+  --art-fs: clamp(36px, calc(-14.65px + 3.015vw), 54px);
+  min-height: clamp(176px, calc(-71.64px + 14.74vw), 264px);
+}
+
+.mi-card > * { position: relative; z-index: 2; }
+
+.mi-kicker {
+  font-size: clamp(10px, calc(-4.07px + .838vw), 15px);
+  font-weight: 760;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--tone-a) 70%, #fff);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--tone-a) 22%, transparent);
+  margin-bottom: 8px;
+}
+
+.mi-title {
+  font-size: clamp(18px, calc(-7.33px + 1.508vw), 27px);
+  font-weight: 780;
+  line-height: 1.16;
+  color: rgba(255, 255, 255, .96);
+  /* Mineradio 的最窄卡是 `max-width: calc(100% - 78px)`（图位 70 + 8），主角卡是 −142（126 + 16）。
+     我们四卡一行、卡更窄，照抄这两个数正好也给右下角图位让开了位（probe-style 实测过）。 */
+  max-width: calc(100% - var(--art) - 8px);
+}
+
+/* 主角卡的标题/副文都大一档（Mineradio：24 / 12.5），让位量也大一档（图位 + 16）。 */
+.mi-card.featured .mi-title {
+  font-size: clamp(24px, calc(-9.77px + 2.01vw), 36px);
+  max-width: calc(100% - var(--art) - 16px);
+}
+
+.mi-sub {
+  margin-top: 8px;
+  font-size: clamp(10.5px, calc(-4.27px + .879vw), 15.75px);
+  line-height: 1.45;
+  color: rgba(255, 255, 255, .55);
+  max-width: calc(100% - var(--art) - 4px);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mi-card.featured .mi-sub {
+  font-size: clamp(12.5px, calc(-5.09px + 1.047vw), 18.75px);
+  max-width: calc(100% - var(--art) - 16px);
+}
+
+/* 封面图位 —— 右下角那个 rotate(3deg) 的圆角方块，Mineradio 的招牌细节。
+ * Mineradio 里这块是专辑封面；我们没有封面图，就用他们的 conic 色块（他们的 LIBRARY 卡
+ * 就是这种生成式色块）+ 一个图标。之前还叠了层「唱片」同心圆纹，跟 emoji 抢视线，删了。 */
+.mi-art {
+  position: absolute;
+  z-index: 1;
+  /* Mineradio：窄卡 right/bottom 14、主角卡 20（页面上量到的分别是 14 和 20）。 */
+  right: 14px;
+  bottom: 14px;
+  width: var(--art);
+  height: var(--art);
+  border-radius: var(--art-r);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--art-fs);
+  line-height: 1;
+  background:
+    radial-gradient(88% 78% at 24% 18%, rgba(255, 255, 255, .26), transparent 62%),
+    conic-gradient(from 210deg, var(--tone-a), var(--tone-b), var(--tone-c), var(--tone-a));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .36), inset 0 1px 0 rgba(255, 255, 255, .16);
+  transform: rotate(3deg);
+  overflow: hidden;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .3));
+}
+/* z-index:-1 让高光垫在 emoji/图片下面 —— 不然绝对定位的伪元素会盖住文字 */
+.mi-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .12), transparent 42%, rgba(0, 0, 0, .28));
+  pointer-events: none;
+}
+.mi-art img { position: relative; z-index: 2; width: 100%; height: 100%; object-fit: cover; }
+
+/* 主角卡的图位贴到 Mineradio 的 20px 内边距上（跟卡片的 padding 一致）。 */
+.mi-card.featured .mi-art { right: 20px; bottom: 20px; }
+
+/* ---------- 洞察条 ----------
+ * 数值照抄 Mineradio 的 #empty-home .home-insight-card / .home-listen-* /
+ * .home-next-* / .home-ranking-entry* / .home-discovery-* */
+.mi-dock {
+  --fc-accent-rgb: 95, 224, 192;
+  display: grid;
+  /* Mineradio 的 #empty-home .home-insight-dock 是 minmax(0,1.12fr) minmax(280px,.88fr)
+     （实测 1680 下 606 : 476），我们原来是 1:1（530:530）—— 右边那张 NEXT UP 拉太宽了。 */
+  grid-template-columns: minmax(0, 1.12fr) minmax(280px, .88fr);
+  gap: 13px;
+  margin-top: 13px;
+}
+@media (max-width: 900px) { .mi-dock { grid-template-columns: 1fr; } }
+
+.mi-insight {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 132px;
+  border: 1px solid rgba(255, 255, 255, .105);
+  border-radius: 22px;
+  padding: 18px 20px;
+  background: linear-gradient(142deg, rgba(20, 24, 31, calc(.62 * var(--mi-bg-m, 1))), rgba(7, 9, 13, calc(.72 * var(--mi-bg-m, 1))));
+  box-shadow: 0 20px 62px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .075);
+  backdrop-filter: blur(25px) saturate(1.18);
+  -webkit-backdrop-filter: blur(25px) saturate(1.18);
+  color: #fff;
+  cursor: pointer;
+  transition: transform .22s, border-color .22s, background .22s, box-shadow .22s;
+}
+
+/* Mineradio .home-insight-card::before：左上角一撮 accent 光 + 一道斜光 */
+.mi-insight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .92;
+  background:
+    radial-gradient(340px 160px at 4% 0, rgba(var(--fc-accent-rgb), .13), transparent 68%),
+    linear-gradient(112deg, rgba(255, 255, 255, .045), transparent 33%, rgba(157, 184, 207, .045));
+}
+.mi-insight > * { position: relative; z-index: 1; }
+
+.mi-insight:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--fc-accent-rgb), .38);
+  background: linear-gradient(142deg, rgba(28, 34, 43, calc(.72 * var(--mi-bg-m, 1))), rgba(7, 9, 14, calc(.80 * var(--mi-bg-m, 1))));
+  box-shadow: 0 25px 72px rgba(0, 0, 0, .31), 0 0 30px rgba(var(--fc-accent-rgb), .075), inset 0 1px 0 rgba(255, 255, 255, .10);
+}
+
+.mi-insight.wide {
+  grid-column: 1 / -1;
+  /* Mineradio #empty-home .home-discovery-strip：不是「文案在上、条目在下」，
+   * 而是「左栏文案 / 右栏条目」并排的一条 104px 横条。照抄它的格子与内边距。 */
+  min-height: 104px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: minmax(160px, .48fr) minmax(0, 1.52fr);
+  align-items: center;
+  gap: 14px;
+  border-radius: 21px;
+}
+.mi-insight.wide .mi-insight-copy { min-width: 0; padding-left: 4px; }
+.mi-insight.wide .mi-insight-title { margin-top: 7px; }
+.mi-insight.wide .mi-insight-sub {
+  margin-top: 5px;
+  /* 左栏只有 160~350 宽，weakNote 那种长句必须让它折行，不能再 nowrap 截断 */
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+/* FOR YOU 横条里的条目窄（4~5 张挤一行，文字区约 100px），
+ * 副文（正确率 / 已做 / 最弱考点）一行放不下 → 放开成两行，比截断成省略号有用。 */
+.mi-insight.wide .mi-item .s {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  line-height: 1.35;
+}
+/* 条目全部挤在一行里 —— 张数由数据决定（3 张补短板 + 0~2 张从零开始），
+ * 所以不用 repeat(3) 而是自动列，4~5 张也不会折成第二行把横条撑高。 */
+.mi-insight.wide .mi-row {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  margin-top: 0;
+}
+
+/* DISCOVER / PLATFORM PICKS 是「入口条目」—— Mineradio 的 .home-ranking-entry
+ * 比洞察卡矮（94px vs 132px）、内边距更紧（16px 18px）、标题更大（18px）。
+ * 不加这个修饰类的话，这两块会跟洞察卡一样高，看着臃肿。 */
+.mi-insight.entry {
+  min-height: 94px;
+  padding: 16px 18px;
+}
+.mi-insight.entry .mi-insight-title {
+  font-size: 18px;
+  color: rgba(255, 255, 255, .97);
+}
+.mi-insight.entry .mi-insight-sub {
+  font-size: 10.5px;
+  margin-top: 5px;
+  color: rgba(255, 255, 255, .48);
+}
+
+/* NEXT UP 是「接下来播放」那种带封面的条目 —— Mineradio 的 .home-next-card
+ * 左边 82px 封面、中间文案、右边 28px 圆箭头，三列 grid。 */
+.mi-insight.next {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) 28px;
+  gap: 14px;
+  padding: 16px;
+  align-items: center;
+}
+.mi-insight.next .mi-cover {
+  width: 82px;
+  height: 82px;
+  border-radius: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 31px;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .3));
+  background:
+    radial-gradient(88% 78% at 24% 18%, rgba(255, 255, 255, .26), transparent 62%),
+    conic-gradient(from 210deg, var(--tone-a, #00f5d4), var(--tone-b, #2442ff), var(--tone-c, #f8f4ee), var(--tone-a, #00f5d4));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .36), inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+.mi-insight.next .mi-insight-title {
+  margin-top: 8px;
+  font-size: 17px;
+  font-weight: 760;
+}
+.mi-insight.next .mi-insight-sub {
+  margin-top: 7px;
+  font-size: 10.5px;
+}
+
+/* Mineradio .home-insight-head：小标 + 右上角「查看偏好」链接 */
+.mi-insight-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(var(--fc-accent-rgb), .82);
+}
+.mi-insight-kicker .link {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: none;
+  color: rgba(255, 255, 255, .42);
+}
+.mi-insight-kicker .link:hover { color: #fff; }
+
+.mi-insight-title {
+  font-size: 17px;
+  font-weight: 790;
+  color: rgba(255, 255, 255, .96);
+  margin-top: 7px;
+  line-height: 1.3;
+}
+.mi-insight-sub {
+  font-size: 10px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, .43);
+  margin-top: 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 三个并排数字（今日练习：时长 / 数量 / 分布）—— Mineradio .home-listen-metrics */
+.mi-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 17px;
+}
+.mi-metric { min-width: 0; }
+.mi-metric + .mi-metric {
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, .085);
+}
+.mi-metric .v {
+  display: block;
+  overflow: hidden;
+  font-size: 21px;
+  font-weight: 780;
+  line-height: 1.05;
+  color: rgba(255, 255, 255, .96);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.mi-metric .l {
+  display: block;
+  overflow: hidden;
+  margin-top: 7px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, .43);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* FOR YOU 那种横排条目 —— Mineradio .home-discovery-list / .home-discovery-song
+ * 注意 .mi-row/.mi-item 也被板块条复用，所以这里只在 .mi-insight 里生效 */
+.mi-insight .mi-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 11px;
+  overflow: visible;
+}
+.mi-insight .mi-item {
+  min-width: 0;
+  height: 78px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, .075);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .035);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s, border-color .18s, background .18s;
+}
+.mi-insight .mi-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--fc-accent-rgb), .32);
+  background: rgba(var(--fc-accent-rgb), .07);
+}
+.mi-insight .mi-item .cover {
+  width: 58px;
+  height: 58px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: linear-gradient(135deg, rgba(var(--fc-accent-rgb), .30), rgba(36, 66, 255, .24), rgba(8, 10, 14, .86));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+}
+.mi-insight .mi-item .t {
+  display: block;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mi-insight .mi-item .s {
+  display: block;
+  overflow: hidden;
+  margin-top: 6px;
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, .44);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 900px) {
+  .mi-insight .mi-row { grid-template-columns: 1fr; }
+  .mi-insight.wide { grid-template-columns: 1fr; align-items: start; }
+  .mi-insight.wide .mi-row { grid-auto-flow: row; grid-auto-columns: auto; }
+  .mi-insight .mi-item { height: 70px; }
+  .mi-metrics { gap: 8px; }
+  .mi-metric + .mi-metric { padding-left: 8px; }
+  .mi-metric .v { font-size: 18px; }
+}
+
+/* 右侧的 › 箭头（Mineradio .home-next-arrow：28px 圆） */
+.mi-arrow {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, .08);
+  color: rgba(255, 255, 255, .72);
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* 右侧占位图形 —— 照抄 Mineradio .home-ranking-entry-art（柱图）
+   与 .home-radio-entry-art（圆形 + 镜像波形）。白色，不是青色：
+   Mineradio :root 里 --fc-accent-rgb: 255,255,255，青色只用在 kicker。 */
+.mi-visual {
+  position: absolute;
+  right: 52px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 52px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  border-radius: 15px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .035));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .11);
+}
+.mi-visual i {
+  display: block;
+  width: 9px;
+  border-radius: 999px 999px 3px 3px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(255, 255, 255, .48));
+  box-shadow: 0 0 14px rgba(255, 255, 255, .16);
+}
+.mi-visual i:nth-child(1) { height: 22px; opacity: .58; }
+.mi-visual i:nth-child(2) { height: 38px; }
+.mi-visual i:nth-child(3) { height: 29px; opacity: .76; }
+.mi-visual i:nth-child(4) { height: 44px; opacity: .92; }
+.mi-visual i:nth-child(5) { height: 18px; opacity: .48; }
+
+/* PLATFORM PICKS：圆形 + 两侧对称的三根波形（Mineradio .home-radio-entry-art） */
+.mi-visual.wave {
+  width: 64px;
+  height: 52px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .23), transparent 60%), rgba(255, 255, 255, .035);
+}
+.mi-visual.wave::before {
+  content: '';
+  width: 19px; height: 19px;
+  border: 2px solid rgba(255, 255, 255, .88);
+  border-radius: 50%;
+  box-shadow: 0 0 0 7px rgba(255, 255, 255, .12), 0 0 22px rgba(255, 255, 255, .24);
+}
+.mi-visual.wave i,
+.mi-visual.wave i::before,
+.mi-visual.wave i::after {
+  content: '';
+  position: absolute;
+  display: block;
+  width: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .72);
+  box-shadow: none;
+}
+.mi-visual.wave i { left: 10px; height: 13px; opacity: 1; }
+.mi-visual.wave i::before { top: -6px; left: 6px; height: 25px; }
+.mi-visual.wave i::after { top: -3px; left: 12px; height: 19px; }
+.mi-visual.wave i:last-child { right: 10px; left: auto; transform: scaleX(-1); }
+
+/* ---------- 子视图（考点练习/错题本/收藏夹/真题卷/练习记录）的返回条 ---------- */
+.mi-backbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.mi-backbar .back {
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .05);
+  color: inherit;
+  border-radius: 999px;
+  padding: 7px 15px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.mi-backbar .back:hover { background: rgba(255, 255, 255, .1); }
+.mi-backbar .k { font-size: 10px; letter-spacing: .17em; text-transform: uppercase; color: var(--brand, #5fe0c0); font-weight: 700; }
+.mi-backbar .n { font-size: 17px; font-weight: 800; }
+
+/* ---------- 两级题库（大模块 → 小模块，照粉笔「专项练习」的分层） ----------
+ * 视觉走 Mineradio 的玻璃卡语言：.home-insight-card 的圆角/毛玻璃/内高光，
+ * .home-ranking-entry-title 的标题字，.home-ranking-entry-sub 的说明字。 */
+.mi-lib { display: flex; flex-direction: column; gap: 13px; }
+.mi-mod {
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, .105);
+  background: linear-gradient(142deg, rgba(20, 24, 31, calc(.62 * var(--mi-bg-m, 1))), rgba(7, 9, 13, calc(.72 * var(--mi-bg-m, 1))));
+  box-shadow: 0 20px 62px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .075);
+  backdrop-filter: blur(25px) saturate(1.18);
+  overflow: hidden;
+  transition: border-color .22s, box-shadow .22s;
+}
+.mi-mod:hover {
+  border-color: rgba(255, 255, 255, .17);
+  box-shadow: 0 26px 72px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .1);
+}
+.mi-mod-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 790;
+  letter-spacing: .01em;
+  color: rgba(255, 255, 255, .97);
+}
+.mi-mod-head:hover { background: rgba(255, 255, 255, .035); }
+.mi-mod-head .tri {
+  transition: transform .22s;
+  font-size: 9px;
+  opacity: .42;
+  width: 18px;
+  text-align: center;
+  flex: none;
+}
+.mi-mod.open .mi-mod-head .tri { transform: rotate(180deg); }
+.mi-mod-head .cnt {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, .48);
+  font-variant-numeric: tabular-nums;
+}
+.mi-mod-body {
+  display: none;
+  border-top: 1px solid rgba(255, 255, 255, .07);
+  padding: 4px 0;
+}
+.mi-mod.open .mi-mod-body { display: block; }
+.mi-kp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px 12px 50px;
+  border-bottom: 1px solid rgba(255, 255, 255, .045);
+  transition: background .18s, padding-left .18s;
+}
+.mi-kp:last-child { border-bottom: 0; }
+.mi-kp:hover { background: rgba(255, 255, 255, .04); padding-left: 54px; }
+.mi-kp .n {
+  font-size: 14px;
+  font-weight: 620;
+  color: rgba(255, 255, 255, .9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mi-kp:first-child .n { font-weight: 760; color: #fff; }
+.mi-kp .c {
+  font-size: 11px;
+  color: rgba(255, 255, 255, .45);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.mi-kp .go {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--brand, #5fe0c0);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  flex: none;
+}
+.mi-kp .go span {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .075);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  transition: transform .18s, background .18s;
+}
+.mi-kp .go:hover { text-decoration: none; }
+.mi-kp .go:hover span { background: rgba(255, 255, 255, .15); transform: translateX(2px); }
+
+/* ---------- 自定义刷题表单 ---------- */
+.cd-f { display: flex; flex-direction: column; gap: 6px; }
+.cd-f > span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .46);
+}
+.cd-f select,
+.cd-f input {
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, .13);
+  background: rgba(255, 255, 255, .06);
+  color: inherit;
+  font-size: 13px;
+}
+.cd-f select option { background: #1a2226; color: #fff; }
+
+/* ★粉笔账号菜单（用户 m11719：「退出的功能我怎么没看到」）============ */
+.fb-acc-wrap { position: relative; display: inline-flex; align-items: center; gap: 8px; }
+.fb-acc { border: 1px solid transparent; }
+.fb-acc:hover { filter: brightness(1.18); }
+.fb-acc-pop {
+  position: absolute; z-index: 60; top: calc(100% + 8px); right: 0;
+  width: 262px; padding: 14px 15px 12px; text-align: left;
+  border-radius: 15px; border: 1px solid rgba(255, 255, 255, .13);
+  background: rgba(18, 24, 29, .97); color: #e9eef1;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, .58);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+.fb-acc-pop[hidden] { display: none; }
+.fb-acc-h { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .5); margin-bottom: 9px; }
+.fb-acc-r { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 12.5px; }
+.fb-acc-r > span { color: rgba(255, 255, 255, .48); flex: 0 0 auto; }
+.fb-acc-r > b { font-weight: 650; text-align: right; word-break: break-all; }
+.fb-acc-a { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.fb-acc-t { margin-top: 11px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .1); font-size: 11.5px; line-height: 1.5; color: rgba(255, 255, 255, .46); }

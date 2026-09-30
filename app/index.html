@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>超频 OVERCLOCK</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="scratch.css">
+<link rel="stylesheet" href="motion.css">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="wall.css">
+<link rel="stylesheet" href="settle.css">
+<link rel="stylesheet" href="achv.css">
+<link rel="stylesheet" href="player.css">
+<link rel="stylesheet" href="deep.css">
+<link rel="stylesheet" href="plan.css">
+</head>
+<body>
+
+<!-- ================= 开机动画 ================= -->
+<div class="splash" id="splash">
+  <img class="splash-photo" id="splash-photo" src="assets/mao_splash.jpg" alt="">
+  <div class="splash-veil"></div>
+  <div class="splash-in">
+    <div class="splash-mark">公</div>
+    <div class="splash-text" id="splash-text"></div>
+  </div>
+  <div class="splash-bar"><i></i></div>
+  <div class="splash-skip">点任意处进入</div>
+</div>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand" title="超频 OVERCLOCK">
+      <span class="bm">公</span>
+      <span class="bt">超频 OVERCLOCK<em>v1.9.30</em></span>
+    </div>
+    <div class="crumb" id="crumb">首页</div>
+    <div class="top-actions">
+      <div class="searchbox" id="searchbox" title="全库搜索（/）">
+        <span class="ico">🔍</span>
+        <input id="q" placeholder="搜索卡片 / 题目 / 成语…" autocomplete="off">
+      </div>
+      <button class="icon-btn" id="btn-theme" title="切换主题">◐</button>
+      <button class="icon-btn win-only" id="win-full" title="全屏 / 退出全屏（F11）">⛶</button>
+      <button class="icon-btn win-only" id="win-close" title="关闭窗口（也可 Alt+F4）">✕</button>
+    </div>
+  </header>
+  <div class="navbar"><nav id="nav"></nav><div class="resume-slot" id="resume-slot"></div></div>
+  <main class="stage">
+    <section class="view" id="view"></section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* 开机动画：从 PAIRS 里随机取一组「照片 + 文案」，逐字浮现，2.9s 后淡出；同一窗口刷新不再播 */
+(function () {
+  var splash = document.getElementById('splash');
+  try {
+    if (sessionStorage.getItem('xcterm_splash') === '1' || /[?&]nosplash/.test(location.search)) { splash.style.display = 'none'; return; }
+    sessionStorage.setItem('xcterm_splash', '1');
+  } catch (e) {}
+  /* 照片 + 文案的配对池（想换配对就改这里；最后一张图只允许配「在失去的所有人里，我最怀念我自己」） */
+  var PAIRS = [
+    { p: 'assets/mao_splash.jpg',      t: '北海上还结着坚冰的时候，我看到了洁白的梅花盛开。' },
+    { p: 'assets/mao_splash.jpg',      t: '一万年太久，只争朝夕' },
+    { p: 'assets/mao_splash.jpg',      t: '天下为公' },
+    { p: 'assets/splash_juzizhou.jpg', t: '悟已往之不谏，知来者之可追' },
+    { p: 'assets/splash_juzizhou.jpg', t: '一万年太久，只争朝夕' },
+    { p: 'assets/splash_juzizhou.jpg', t: '天下为公' },
+    { p: 'assets/splash_portrait.jpg', t: '在失去的所有人里，我最怀念我自己' }
+  ];
+  var n = PAIRS.length, idx = Math.floor(Math.random() * n), last = null;
+  try { last = sessionStorage.getItem('xcterm_splash_pair'); } catch (e) {}
+  for (var r = 0; r < 8 && n > 1 && String(idx) === last; r++) idx = Math.floor(Math.random() * n);   // 尽量不连着重复
+  try { sessionStorage.setItem('xcterm_splash_pair', String(idx)); } catch (e) {}
+  var pair = PAIRS[idx], line = pair.t;
+  document.getElementById('splash-photo').src = pair.p;
+  var txt = document.getElementById('splash-text');
+  txt.className = 'splash-text' + (line.length <= 10 ? ' short' : '');
+  txt.innerHTML = line.split('').map(function (c, i) {
+    return '<i style="animation-delay:' + (150 + i * 46) + 'ms">' + c + '</i>';
+  }).join('');
+  var gone = false;
+  function bye() {
+    if (gone) return; gone = true;
+    splash.classList.add('out');
+    setTimeout(function () { splash.style.display = 'none'; }, 800);
+  }
+  // 不自动进：必须点一下（或按 Enter / Esc）才走，淡出 0.8s 后收起
+  splash.addEventListener('click', function () { bye(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' || e.key === 'Enter') { bye(); } });
+})();
+</script>
+
+<script src="data/meta.js"></script>
+<script src="data/notes.js"></script>
+<script src="data/bianximap.js"></script>
+<script src="data/bankindex.js"></script>
+<!-- 粉笔同步数据（可选：没跑过同步就没有这两个文件，其余功能不受影响） -->
+<script src="data/fenbi/fb_bank.js"></script>
+<script src="data/fenbi/fb_meta.js"></script>
+<script src="data/bianxi.js"></script>
+<script src="data/shizheng.js"></script>
+<script src="data/mindmap.js"></script>
+<!-- 粉笔接口层：在线模式走 server.mjs 的反向代理，离线模式自动回退到上面的快照 -->
+<script src="fenbi-api.js"></script>
+<script src="fenbi-bridge.js"></script>
+<!-- 🌸粉笔 镜像界面（VIEWS.fenbi 委托进来） -->
+<script src="fenbi-view.js"></script>
+<script src="skin.js"></script>
+<!-- 壁纸库（Wallpaper Engine 项目 + 本地图片/视频） -->
+<script src="wallpaper.js"></script>
+<script src="song.js"></script>
+<script src="achv.js"></script>
+<script src="qr.js"></script>
+<script src="player.js"></script>
+<!-- 🤖 AI 讲师（超频 ⇄ 开源 DeepTutor）：走 server.mjs 的 /deep/* -->
+<script src="deep.js"></script>
+<!-- 🤖 AI 讲师 · 整页：把 DeepTutor 自己的网页版嵌进来（VIEWS.ai 委托进来） -->
+<script src="deep-web.js"></script>
+<script src="app.js"></script>
+<script src="scratch.js"></script>
+<script src="winchrome.js"></script>
+<script src="motion.js"></script>
+</body>
+</html>
+

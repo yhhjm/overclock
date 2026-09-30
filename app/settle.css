@@ -1,0 +1,255 @@
+/* ============================================================
+   settle.css —— 结算画面（刷完题出分的那一屏）
+   用户要求：先蹦出一个数字，然后全部一起出来；配一次粒子爆开。
+   配色沿用 home.css 的 Mineradio 三色：--tone-a 青 / --tone-b 蓝 / --tone-c 米白
+   ============================================================ */
+
+.settle {
+  position: relative;
+  margin: 18px 0 8px;
+  padding: 30px 28px 24px;
+  border-radius: 26px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgba(0, 245, 212, .16), transparent 58%),
+    radial-gradient(110% 130% at 92% 12%, rgba(36, 66, 255, .18), transparent 60%),
+    var(--panel-read, rgba(255, 255, 255, .06));
+  border: 1px solid var(--line, rgba(255, 255, 255, .10));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .38);
+}
+
+/* ── 复盘卡（AI 讲师写的 Markdown 正文）─────────────────────────────
+   ★用户 m24495：写完一组题，结算页的总结和 AI 复盘看不清。
+   两个原因，都在这里收掉：
+     ① 这张卡原来只有 border、**没有 background** —— 挂了壁纸就是「深色字压深色壁纸」；
+        现在底面用 --panel-read（跟题干卡同一套读性令牌，挂壁纸时 skin.js 会给它压到 ≥0.88）
+     ② 正文原来是 esc() 平铺 + white-space:pre-wrap，模型给的 Markdown 记号（** | ##）全露在外面
+    .settle 本身原来也是 6% 白，同样漏壁纸，一并换成 --panel-read。 */
+#review-card {
+  margin: 20px 0 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-read, var(--panel));
+  box-shadow: var(--shadow);
+  color: var(--txt);
+}
+#review-card > h2 { margin: 0 0 10px; font-size: 16px; }
+#review-card .rv-body { line-height: 1.9; font-size: 13.5px; color: var(--txt-2); }
+/* Markdown 渲染出来的块（mdHTML 生成） */
+.md-h { margin: 15px 0 6px; font-size: 14.5px; font-weight: 800; color: var(--txt); }
+.md-h:first-child { margin-top: 0; }
+.md-h1, .md-h2 { font-size: 15.5px; }
+.md-h3 { font-size: 14.5px; }
+.md-p { margin: 6px 0; }
+.md-ul, .md-ol { margin: 6px 0; padding-left: 1.45em; }
+.md-ul li, .md-ol li { margin: 3px 0; }
+.md-hr { border: 0; border-top: 1px solid var(--line); margin: 13px 0; }
+.md-q { margin: 8px 0; padding: 7px 13px; border-left: 3px solid var(--brand); border-radius: 0 8px 8px 0;
+  background: var(--panel-read-2); color: var(--txt); }
+.rv-body code { background: var(--panel-read-2); border: 1px solid var(--line); border-radius: 5px;
+  padding: 1px 5px; font-size: 12.5px; }
+.md-t { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.md-t th, .md-t td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; }
+.md-t th { background: var(--panel-read-2); color: var(--txt); font-weight: 700; }
+.md-t td { background: var(--panel-read); color: var(--txt-2); }
+
+/* 分数爆开时的一圈光晕，跟粒子叠着看 */
+.settle::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  top: 26%;
+  width: 340px;
+  height: 340px;
+  margin: -170px 0 0 -170px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 245, 212, .30), transparent 66%);
+  filter: blur(18px);
+  opacity: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.settle.go::after { animation: settleGlow 1200ms cubic-bezier(.2, .7, .3, 1) 120ms both; }
+@keyframes settleGlow {
+  0% { opacity: 0; transform: scale(.35); }
+  35% { opacity: 1; }
+  100% { opacity: .55; transform: scale(1); }
+}
+
+.settle-kicker {
+  font-size: 12px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--mut, #8b95a7);
+}
+.settle-title {
+  margin: 6px 0 2px;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--mut, #8b95a7);
+}
+
+/* ---- 第 1 拍：分数先蹦出来 ---- */
+.settle-score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: clamp(64px, 11vw, 128px);
+  font-weight: 850;
+  letter-spacing: -.045em;
+  line-height: .95;
+  background: linear-gradient(120deg, var(--tone-a, #00f5d4), var(--tone-c, #f8f4ee) 58%, var(--tone-b, #2442ff));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  opacity: 0;
+}
+.settle-score em {
+  font-size: .30em;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  -webkit-text-fill-color: var(--mut, #8b95a7);
+}
+.settle.go .settle-score { animation: settlePop 720ms cubic-bezier(.16, 1.25, .34, 1) 140ms both; }
+@keyframes settlePop {
+  0% { opacity: 0; transform: translateY(26px) scale(.42); filter: blur(9px); }
+  55% { opacity: 1; filter: blur(0); }
+  72% { transform: translateY(0) scale(1.075); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.settle-verdict {
+  margin: 10px 0 0;
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -.01em;
+}
+
+/* ---- 第 2 拍：其余的一起出来 ---- */
+.settle-rest {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: center;
+  margin-top: 22px;
+  opacity: 0;
+}
+.settle.go .settle-rest { animation: settleAll 560ms cubic-bezier(.2, .8, .3, 1) 1180ms both; }
+@keyframes settleAll {
+  from { opacity: 0; transform: translateY(16px) scale(.985); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settle-score, .settle-rest, .settle::after { animation: none !important; opacity: 1 !important; transform: none !important; filter: none !important; }
+}
+
+/* ---- 错题占比环 ---- */
+.settle-ring {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  flex: none;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--ok, #2fd27a) 0 calc(var(--right, 0) * 1%),
+    var(--bad, #ff5470) 0 calc(var(--right, 0) * 1% + var(--wrong, 0) * 1%),
+    rgba(255, 255, 255, .16) 0
+  );
+}
+.settle-ring::before {
+  content: "";
+  position: absolute;
+  inset: 13px;
+  border-radius: 50%;
+  background: #12161d;
+}
+.settle-ring b {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-size: 22px;
+  font-weight: 800;
+}
+.settle-ring b i { font-size: 11px; font-style: normal; font-weight: 600; color: var(--mut, #8b95a7); }
+.settle-ring legend { display: none; }
+
+.settle-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--mut, #8b95a7);
+}
+.settle-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.settle-legend i {
+  width: 9px; height: 9px; border-radius: 3px; display: inline-block;
+}
+
+/* ---- 指标条 ---- */
+.settle-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+.settle-metric {
+  padding: 13px 14px 11px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .055);
+  border: 1px solid var(--line, rgba(255, 255, 255, .09));
+}
+.settle-metric b { display: block; font-size: 25px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+.settle-metric span { font-size: 11.5px; color: var(--mut, #8b95a7); letter-spacing: .05em; }
+
+/* ---- 播放条（只在结算画面出现） ---- */
+.settle-song {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 16px;
+  padding: 11px 14px;
+  border-radius: 15px;
+  background: rgba(0, 245, 212, .09);
+  border: 1px solid rgba(0, 245, 212, .22);
+}
+.settle-song .sk-disc {
+  width: 34px; height: 34px; flex: none; border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--tone-a, #00f5d4), var(--tone-b, #2442ff), var(--tone-a, #00f5d4));
+  box-shadow: 0 0 0 3px rgba(0, 245, 212, .18);
+}
+.settle-song.playing .sk-disc { animation: skSpin 3.6s linear infinite; }
+@keyframes skSpin { to { transform: rotate(360deg); } }
+.settle-song .sk-txt { min-width: 0; flex: 1; }
+.settle-song .sk-name {
+  font-size: 13.5px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.settle-song .sk-sub { font-size: 11.5px; color: var(--mut, #8b95a7); }
+.settle-song input[type="range"] { width: 108px; }
+
+.settle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* 未支持 file:// 时的提示条 */
+.settle-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--mut, #8b95a7);
+}
+
+@media (max-width: 720px) {
+  .settle-rest { grid-template-columns: 1fr; }
+  .settle-ring { margin: 0 auto; }
+}
